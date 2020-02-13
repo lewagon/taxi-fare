@@ -1,4 +1,3 @@
-
 import datetime
 import os
 from google.cloud import storage
@@ -6,22 +5,23 @@ import pandas as pd
 from sklearn import linear_model
 import numpy as np
 
+BUCKET_NAME="TODO"
+PATH_INSIDE_BUCKET="TODO"
 
-BUCKET_NAME = "wagon-ml-bizot-27"
-PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
+# Model version (folder name where the *.joblib is soted in the bucket)
+MODEL_VERSION="v1"
 
 def get_data():
     """method to get the training data (or a portion of it) from google cloud bucket"""
-    # Add Client() here 
     client = storage.Client()
     df = pd.read_csv("gs://{}/{}".format(BUCKET_NAME, PATH_INSIDE_BUCKET), nrows=1000)
     return df
 
 def compute_distance(df,
                     start_lat="pickup_latitude",
-                 start_lon="pickup_longitude",
-                 end_lat="dropoff_latitude",
-                 end_lon="dropoff_longitude"):
+                    start_lon="pickup_longitude",
+                    end_lat="dropoff_latitude",
+                    end_lon="dropoff_longitude"):
     lat_1_rad, lon_1_rad = np.radians(df[start_lat].astype(float)), np.radians(df[start_lon].astype(float))
     lat_2_rad, lon_2_rad = np.radians(df[end_lat].astype(float)), np.radians(df[end_lon].astype(float))
     dlon = lon_2_rad - lon_1_rad
@@ -52,21 +52,16 @@ def save_model(reg):
     local_model_name = 'model.joblib'
     joblib.dump(reg, local_model_name)
 
-
-    # Here you might want it to be unique ...
-    # ... or not, in that case if you run your training job multiple times you will erase your model every time
-    version_name = "versionLivecode"
     client = storage.Client().bucket(BUCKET_NAME)
 
     storage_location = '{}/{}/{}/{}'.format(
         'models',
         'taxi_fare_model',
-        version_name,
+        MODEL_VERSION,
         local_model_name)
     blob = client.blob(storage_location)
     blob.upload_from_filename(local_model_name)
     print("uploaded model")
-
 
 df = get_data()
 X_train, y_train = preprocess(df)

@@ -1,71 +1,92 @@
-# Objective
+# Taxi Fare model
 
-Train your first model on GCP  
+The goal is to build a simple model and submit a training job to AI platform.
 
-The goal is to build a very simple model and submit a training job to AI platform  
+Then we can AI platform to make **prediction** on new data.
 
-We provide you with the code to run for this simple model  
+Here are the steps executed by `TaxiFareModel/trainer.py`:
 
-Different Steps executed by TaxiFareModel/trainer.py :
-- get sample of training data from Google Cloud Storage Bucket
-- train simple model
-- upload model to Google Cloud Storage
+1. Get a sample of training data from Google Cloud Storage Bucket
+2. Train the model
+3. Upload the model to Google Cloud Storage
 
 ## Install Requirements
 
-Make sure you have done following steps:
-- created a GCP account
-- fetch Service Account key and added them to your .zshrc (or .bash_profile) To check run :
+In the following, we suppose that:
+
+1. You have a GCP account, a project, a Service Account key on your disk and its path set up in the `GOOGLE_APPLICATION_CREDENTIALS` env key
+2. The "AI Platform Training & Prediction" + "Compute Engine API" on the console for your project
+3. A bucket on Google Cloud storage containing a file `data/data_taxi_trips_train_sample_set.csv`
+4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
+
+## Clone this repo
+
+In your terminal, run:
+
 ```bash
-echo $GOOGLE_APPLICATION_CREDENTIALS
+mkdir ~/code/lewagon && cd $_
+git clone git@github.com:lewagon/taxi-fare.git
+cd taxi-fare
+stt # Open the project in Sublime Text!
 ```
-Check that it return a path to your credentials  
-- Enable the AI Platform Training & Prediction and Compute Engine APIs on [GCP console](https://console.cloud.google.com/flows/enableapi?apiid=ml.googleapis.com,compute_component&_ga=2.269215094.662509797.1580849510-2071889129.1567861089&_gac=1.154971594.1580849512.CjwKCAiAyeTxBRBvEiwAuM8dnbZ6uMwizbZW44J2mBCX6ncEjwjwpgF8S8QsvhYAXLkJ8awDnIRTNRoCJ_0QAvD_BwE)
 
 ## Check that the code runs locally
 
-Update variables `BUCKET_NAME` `PATH_INSIDE_BUCKET` inside `TaxiFareModel/trainer.py`
+In Sublime Text, open the `Makefile` and set the two first lines variables:
 
-Launch Training locally
+- `PROJECT_ID`
+- `BUCKET_NAME` (where GCP will store training material)
+
+Then open the `TaxiFareModel/trainer.py` and set the two global variables:
+
+- `BUCKET_NAME` (where the training data is stored)
+- `PATH_INSIDE_BUCKET` (should be `data/_____.csv`)
+
+Then launch:
 
 ```bash
-nake run_locally
+make run_locally
 ```
 
 Check that :
-- A `model.joblib` file has been stored locally
-- Your model has been uploaded to [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en)
+
+- A `model.joblib` file has been created locally
+- This file has been uploaded to the bucket `BUCKET_NAME`, in the following path: `models/taxi_fare_model/VERSION`.
 
 ## Specify your requirements to GCP inside setup.py
 
-Check version of python libraries we are using inside `trainer.py`:
-```bash
-pip freeze | grep -E  "pandas|scikit|google-cloud-storage|gcsfs"
-```
-And make sure you have them in your `setup.py`, if not add them to `REQUIRED_PACKAGES` inside `setup.py`
+To get the latest versions of the dependencies you can run:
 
+```bash
+pip install --upgrade gcsfs google-cloud-storage pandas scikit-learn
+```
+
+Check version of python libraries we have installed in the virtualenv:
+
+```bash
+pip freeze | grep -E "pandas|scikit|google-cloud-storage|gcsfs"
+```
+
+Make sure to put them in the `REQUIRED_PACKAGES` list in `setup.py`.
 
 ## Submit Training to GCP
 
-Inspect Makefile
-Ensure you have correct python (3.7) and runtime (1.15) versions, more info on latest runtimes on [GCP Documentation](https://cloud.google.com/ai-platform/training/docs/runtime-version-list?hl=en)
+The `Makefile` uses the following configuration:
 
-```bash
+```
 PYTHON_VERSION=3.7
 RUNTIME_VERSION=1.15
 ```
 
-Then run :
+Fore more information about latest runtimes, check out the [documentation](https://cloud.google.com/ai-platform/training/docs/runtime-version-list?hl=en).
+
+You can now run:
+
 ```bash
-nake gcp_submit_training
+make gcp_submit_training
 ```
 
-You can now follow your job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)  
+:bulb: You can now follow your job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
 
-When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the new `model.joblib` has correctly been uploaded
-
-## TroubleShooting
-
-Notice than speccific libraries has been
-
+When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the `model.joblib` has been updated
 
