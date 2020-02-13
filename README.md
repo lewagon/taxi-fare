@@ -36,6 +36,15 @@ Check that :
 - A `model.joblib` file has been stored locally
 - Your model has been uploaded to [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en)
 
+## Specify your requirements to GCP inside setup.py
+
+Check version of python libraries we are using inside `trainer.py`:
+```bash
+pip freeze | grep -E  "pandas|scikit|google-cloud-storage|gcsfs"
+```
+And make sure you have them in your `setup.py`, if not add them to `REQUIRED_PACKAGES` inside `setup.py`
+
+
 ## Submit Training to GCP
 
 Inspect Makefile
@@ -54,5 +63,9 @@ nake gcp_submit_training
 You can now follow your job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)  
 
 When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the new `model.joblib` has correctly been uploaded
+
+## TroubleShooting
+
+Notice than speccific libraries has been
 
 
