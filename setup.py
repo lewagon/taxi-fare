@@ -4,9 +4,8 @@ from setuptools import setup
 REQUIRED_PACKAGES = [
     'gcsfs==0.6.0',
     'google-cloud-storage==1.26.0',
-    'pandas==1.0.1',
-    'scikit-learn==0.22.1'
-]
+    'pandas==0.24.2',
+    'scikit-learn==0.20.4']
 
 setup(name='TaxiFareModel',
     version='1.0',

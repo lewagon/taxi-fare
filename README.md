@@ -19,6 +19,7 @@ In the following, we suppose that:
 3. A bucket on Google Cloud storage containing a file `data/data_taxi_trips_train_sample_set.csv`
 4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
 
+
 ## Clone this repo
 
 In your terminal, run:
@@ -29,6 +30,13 @@ git clone git@github.com:lewagon/taxi-fare.git
 cd taxi-fare
 stt # Open the project in Sublime Text!
 ```
+## Install correct python dependencies
+
+
+```bash
+pip install -r requirements.txt
+```
+
 
 ## Check that the code runs locally
 
