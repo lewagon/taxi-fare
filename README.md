@@ -63,10 +63,10 @@ Check that :
 
 ## Specify your requirements to GCP inside setup.py
 
-To get the latest versions of the dependencies you can run:
+Maek sure you have installed dependencies from requirements.txt
 
 ```bash
-pip install --upgrade gcsfs google-cloud-storage pandas scikit-learn
+pip install -r requirements.txt
 ```
 
 Check version of python libraries we have installed in the virtualenv:
@@ -75,7 +75,7 @@ Check version of python libraries we have installed in the virtualenv:
 pip freeze | grep -E "pandas|scikit|google-cloud-storage|gcsfs"
 ```
 
-Make sure to put them in the `REQUIRED_PACKAGES` list in `setup.py`.
+Make sure they match with the `REQUIRED_PACKAGES` list in `setup.py`.
 
 ## Submit Training to GCP
 
@@ -94,7 +94,7 @@ You can now run:
 make gcp_submit_training
 ```
 
-:bulb: You can now follow your job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
+:bulb: You can now follow yor job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
 
 When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the `model.joblib` has been updated
 
