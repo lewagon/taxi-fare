@@ -94,7 +94,7 @@ You can now run:
 make gcp_submit_training
 ```
 
-:bulb: You can now follow yor job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
+:bulb: You can now follow the job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
 
 When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the `model.joblib` has been updated
 
