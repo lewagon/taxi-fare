@@ -1,26 +1,27 @@
-# Taxi Fare model
+# Taxi Fare deployment package
 
-The goal is to build a simple model and submit a training job to AI platform.
+You have the structure and a sample code for deploying a custom pipeline to production  
 
-Then we can AI platform to make **prediction** on new data.
+The code is very similar to the one you already implemented during week 5  
 
-Here are the steps executed by `TaxiFareModel/trainer.py`:
 
-1. Get a sample of training data from Google Cloud Storage Bucket
-2. Train the model
-3. Upload the model to Google Cloud Storage
-
-## Install Requirements
-
+## 
+This package serves two purposes:
+- give a package structure to deploy future ML model to production if you have those needs in your carreer as a data scientist
+- give a complete solution for the [last exercice](https://kitt.lewagon.com/camps/359/challenges?path=05-Production%2F05-Deploy-to-Production-day2%2F05-Deploy-on-All-data) of week 5:
+     - A pipeline with `custom preprocessing` (Custom encoders) 
+     - A RandomSearchCV for Hyperparameter tuning
+     - A custom predictor class to make our own prdictions
+     
+## Prerequisite
 In the following, we suppose that:
-
+ 
 1. You have a GCP account, a project, a Service Account key on your disk and its path set up in the `GOOGLE_APPLICATION_CREDENTIALS` env key
 2. The "AI Platform Training & Prediction" + "Compute Engine API" on the console for your project
 3. A bucket on Google Cloud storage containing a file `data/data_taxi_trips_train_sample_set.csv`
 4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
 
-
-## Clone this repo
+## Clone this repo and enter to branch solution
 
 In your terminal, run:
 
@@ -28,73 +29,74 @@ In your terminal, run:
 mkdir ~/code/lewagon && cd $_
 git clone git@github.com:lewagon/taxi-fare.git
 cd taxi-fare
+git checkout solution
 stt # Open the project in Sublime Text!
 ```
-## Install correct python dependencies
 
+## Structure of the project
+```
+├── Makefile          => all necessary commands
+├── README.md
+├── TaxiFareModel     => python package to be deployed and run on GCP
+│   ├── __init__.py
+│   ├── data.py
+│   ├── encoders.py
+│   ├── trainer.py    => main file that will be run by GCP
+│   └── utils.py
+├── predict.py        => Script to get predictions from our deployed model
+├── predictor.py      => Custom prediction class
+├── requirements.txt
+└── setup.py          => file to specify dependencies and packe info for deployment
+```
+
+## Install correct python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
+## Adapt code to your settings
+### Python code
 
-## Check that the code runs locally
+Replace variable inside `trainer.py` and `data.py` with your variables:
+- `PATH_INSIDE_BUCKET` and `BUCKET_NAME` in `data.py` for downlaoding/uploading data from your Storage
+- `MODEL_DIRECTY` which indicates where to store your `model.joblib` file
 
-In Sublime Text, open the `Makefile` and set the two first lines variables:
+### Makefile Code
+Do the same inside Makefile with:
+- `PROJECT_ID`, `BUCKET_NAME` for submitting training tasks
+- `MODEL_NAME`, and `VERSION_NAME` for deployment
+- `PATH_TO_MODEL` which should be the same as `MODEL_DIRECTY` in trainer.py 
 
-- `PROJECT_ID`
-- `BUCKET_NAME` (where GCP will store training material)
+## Deploy first test model
 
-Then open the `TaxiFareModel/trainer.py` and set the two global variables:
-
-- `BUCKET_NAME` (where the training data is stored)
-- `PATH_INSIDE_BUCKET` (should be `data/_____.csv`)
-
-Then launch:
-
+Ensure that the code runs locally:
 ```bash
 make run_locally
 ```
 
-Check that :
+Submit training to GCP:
+```sql
+make gcp_submit_training 
+```
 
-- A `model.joblib` file has been created locally
-- This file has been uploaded to the bucket `BUCKET_NAME`, in the following path: `models/taxi_fare_model/VERSION`.
-
-## Specify your requirements to GCP inside setup.py
-
-Maek sure you have installed dependencies from requirements.txt
-
+Deploy your model by creating a version you named in the Makefile:
+- Make sure you have created a [model](https://console.cloud.google.com/ai-platform/models?project=wagon-bootcamp-256316) first, then run:
 ```bash
-pip install -r requirements.txt
+make create_pipeline_version
 ```
 
-Check version of python libraries we have installed in the virtualenv:
+And there you go, you just deployed your model  
 
+**NB**: you trained on a few samples, just for you to check that workflow is funcionnal, you would have to train on more samples in the future
+
+## Use your model
+Inspect `predict.py`, replace variables to get data from your storage and test that GCP correctly returns predictions:
 ```bash
-pip freeze | grep -E "pandas|scikit|google-cloud-storage|gcsfs"
+python predict.py
 ```
 
-Make sure they match with the `REQUIRED_PACKAGES` list in `setup.py`.
-
-## Submit Training to GCP
-
-The `Makefile` uses the following configuration:
-
-```
-PYTHON_VERSION=3.7
-RUNTIME_VERSION=1.15
-```
-
-Fore more information about latest runtimes, check out the [documentation](https://cloud.google.com/ai-platform/training/docs/runtime-version-list?hl=en).
-
-You can now run:
-
-```bash
-make gcp_submit_training
-```
-
-:bulb: You can now follow the job submission on the command line or on [AI Platform GCP console](https://console.cloud.google.com/ai-platform/jobs?hl=en)
-
-When your job is finished check on your [Storage Bucket](https://console.cloud.google.com/storage/browser?hl=en) that the `model.joblib` has been updated
-
+## Use it to improve your model
+- Train on more samples
+- chose more paramters for hyperparameter tuning
+- add Custom preprocessing

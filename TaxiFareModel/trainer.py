@@ -1,69 +1,163 @@
-import datetime
 import os
+import warnings
+from termcolor import colored
 from google.cloud import storage
 import pandas as pd
-from sklearn import linear_model
-import numpy as np
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import Lasso, Ridge, LinearRegression
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+import category_encoders as ce
+from TaxiFareModel.data import get_data, clean_df, BUCKET_NAME, DIST_ARGS
+from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash
+from TaxiFareModel.utils import compute_rmse, simple_time_tracker
 
-BUCKET_NAME="TODO"
-PATH_INSIDE_BUCKET="TODO"
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-# Model version (folder name where the *.joblib is soted in the bucket)
-MODEL_VERSION="v1"
+MODEL_DIRECTY = "Pipeline2"  # must the same as PATH_TO_MODEL inside Makefile
 
-def get_data():
-    """method to get the training data (or a portion of it) from google cloud bucket"""
-    client = storage.Client()
-    df = pd.read_csv("gs://{}/{}".format(BUCKET_NAME, PATH_INSIDE_BUCKET), nrows=1000)
-    return df
 
-def compute_distance(df,
-                    start_lat="pickup_latitude",
-                    start_lon="pickup_longitude",
-                    end_lat="dropoff_latitude",
-                    end_lon="dropoff_longitude"):
-    lat_1_rad, lon_1_rad = np.radians(df[start_lat].astype(float)), np.radians(df[start_lon].astype(float))
-    lat_2_rad, lon_2_rad = np.radians(df[end_lat].astype(float)), np.radians(df[end_lon].astype(float))
-    dlon = lon_2_rad - lon_1_rad
-    dlat = lat_2_rad - lat_1_rad
+class Trainer(object):
+    TRAINING_NROWS = 10000
+    ESTIMATOR = "Linear"
+    SPLIT = False
 
-    a = np.sin(dlat / 2.0) ** 2 + np.cos(lat_1_rad) * np.cos(lat_2_rad) * np.sin(dlon / 2.0) ** 2
-    c = 2 * np.arcsin(np.sqrt(a))
-    return 6371 * c
+    def __init__(self, data=None, **kwargs):
+        """
+        FYI:
+        __init__ is called every time you instatiate Trainer
+        Consider kwargs as a dict containig all possible parameters given to your constructor
+        Example:
+            TT = Trainer(nrows=1000, estimator="Linear")
+               ==> kwargs = {"nrows": 1000,
+                            "estimator": "Linear"}
+        :param data:
+        :param kwargs:
+        """
+        self.pipeline = None
+        self.kwargs = kwargs
+        self.nrows = kwargs.get("nrows", self.TRAINING_NROWS)  # cf doc above
+        self.df = None
+        self.model_params = None  # for
+        if isinstance(data, pd.DataFrame):
+            self.df = data
 
-def preprocess(df):
-    """method that pre-process the data"""
-    df["distance"] = compute_distance(df)
-    X_train = df[["distance"]]
-    y_train = df["fare_amount"]
-    return X_train, y_train
+    def get_estimator(self):
+        estimator = self.kwargs.get("estimator", self.ESTIMATOR)
+        if estimator == "Lasso":
+            model = Lasso()
+        elif estimator == "Ridge":
+            model = Ridge()
+        elif estimator == "Linear":
+            model = LinearRegression()
+        elif estimator == "GBM":
+            model = GradientBoostingRegressor()
+        elif estimator == "RandomForest":
+            model = RandomForestRegressor()
+            self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
+                'max_features': ['auto', 'sqrt']}
+            # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
+        else:
+            model = Lasso()
+        estimator_params = self.kwargs.get("estimator_params", {})
+        model.set_params(**estimator_params)
+        print(model.__class__.__name__)
+        return model
 
-def train_model(X_train, y_train):
-    """method that trains the model"""
-    clf = linear_model.Lasso(alpha=0.1)
-    clf.fit(X_train, y_train)
-    print("trained model")
-    return clf
+    def set_pipeline(self):
 
-def save_model(reg):
-    """Save the model into a .joblib and upload it on Google Storage /models folder
-    HINTS : use sklearn.joblib (or jbolib) libraries and google-cloud-storage"""
-    from sklearn.externals import joblib
-    local_model_name = 'model.joblib'
-    joblib.dump(reg, local_model_name)
+        time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
+                                      OneHotEncoder(handle_unknown='ignore'))
 
-    client = storage.Client().bucket(BUCKET_NAME)
+        pipe_geohash = make_pipeline(AddGeohash(), ce.HashingEncoder())
 
-    storage_location = '{}/{}/{}/{}'.format(
-        'models',
-        'taxi_fare_model',
-        MODEL_VERSION,
-        local_model_name)
-    blob = client.blob(storage_location)
-    blob.upload_from_filename(local_model_name)
-    print("uploaded model")
+        features_encoder = ColumnTransformer([
+            ('distance', DistanceTransformer(**DIST_ARGS), list(DIST_ARGS.values())),
+            ('time_features', time_features, ['pickup_datetime']),
+            ('geohash', pipe_geohash, list(DIST_ARGS.values()))
+        ])
 
-df = get_data()
-X_train, y_train = preprocess(df)
-reg = train_model(X_train, y_train)
-save_model(reg)
+        self.pipeline = Pipeline(steps=[
+            ('features', features_encoder),
+            ('rgs', self.get_estimator())])
+
+    def add_grid_search(self):
+        """"
+        Apply Gridsearch on self.params defined in get_estimator
+        {'rgs__n_estimators': [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)],
+          'rgs__max_features' : ['auto', 'sqrt'],
+          'rgs__max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
+        """
+        # Here to apply ramdom search to pipeline, need to follow naming "rgs__paramname"
+        params = {"rgs__" + k: v for k, v in self.model_params.items()}
+        self.pipeline = RandomizedSearchCV(estimator=self.pipeline, param_distributions=params,
+                                           n_iter=100, cv=3, verbose=2,
+                                           random_state=42, n_jobs=-1)
+
+    @simple_time_tracker
+    def fit(self, X_train, y_train):
+        self.pipeline.fit(X_train, y_train)
+
+    def evaluate(self, X_test, y_test):
+        if self.pipeline is None:
+            raise ("Cannot evaluate an empty pipeline")
+        y_pred = self.pipeline.predict(X_test)
+        rmse = compute_rmse(y_pred, y_test)
+        return round(rmse, 3)
+
+    def train(self):
+        if not isinstance(self.df, pd.DataFrame):
+            self.df = get_data(nrows=100000, bq=True)
+        y_train = self.df["fare_amount"]
+        X_train = self.df.drop("fare_amount", axis=1)
+        self.split = self.kwargs.get("split", self.TRAINING_NROWS)  # cf doc above
+        if self.split:
+            X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.15)
+        self.set_pipeline()
+        self.add_grid_search()
+        self.fit(X_train, y_train)
+        rmse_train = self.evaluate(X_train, y_train)
+        if self.split:
+            rmse_val = self.evaluate(X_val, y_val)
+            print(colored("rmse train: {} || rmse val: {}".format(rmse_train, rmse_val), "green"))
+        else:
+            rmse_val = self.evaluate(X_val, y_val)
+            print(colored("rmse train: {}".format(rmse_train), "green"))
+
+    def upload_model(self, upload=True, auto_remove=True):
+        """Save the model into a .joblib and upload it on Google Storage /models folder
+        HINTS : use sklearn.joblib (or jbolib) libraries and google-cloud-storage"""
+        from sklearn.externals import joblib
+        local_model_name = 'model.joblib'
+        joblib.dump(self.pipeline, local_model_name)
+        print("model.joblib saved locally")
+
+        if upload:
+            client = storage.Client().bucket(BUCKET_NAME)
+
+            storage_location = '{}/{}/{}/{}'.format(
+                'models',
+                'taxi_fare_model',
+                MODEL_DIRECTY,
+                local_model_name)
+            blob = client.blob(storage_location)
+            blob.upload_from_filename(local_model_name)
+            print(colored("=> model.joblib uploaded to bucket {} inside {}".format(BUCKET_NAME, storage_location),
+                          "green"))
+            if auto_remove:
+                os.remove(local_model_name)
+
+
+if __name__ == "__main__":
+    # Get and clean data
+    N = 10000
+    split = True  # set to False when training no whole training data for final step
+    df = get_data(nrows=N)
+    df = clean_df(df)
+
+    # Train and save model, locally and
+    t = Trainer(data=df, estimator="RandomForest")
+    t.train()
+    t.upload_model(upload=True)
