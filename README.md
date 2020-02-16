@@ -28,6 +28,7 @@ In your terminal, run:
 ```bash
 mkdir ~/code/lewagon && cd $_
 git clone git@github.com:lewagon/taxi-fare.git
+mv taxi-fare taxi-fare-deployment
 cd taxi-fare
 git checkout solution
 stt # Open the project in Sublime Text!
