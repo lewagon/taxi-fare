@@ -1,2 +1,4 @@
 *.joblib
 __pycache__
+data
+.idea

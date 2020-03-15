@@ -8,7 +8,11 @@ REQUIRED_PACKAGES = [
     'google-cloud-storage==1.26.0',
     'pygeohash',
     'category_encoders',
-    'termcolor']
+    'termcolor',
+    'mlflow',
+    'xgboost==0.90',
+    'memoized_property',
+    'psutil']
 
 setup(
     name='TaxiFareModel',

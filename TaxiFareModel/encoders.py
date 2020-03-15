@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from scipy.spatial import minkowski_distance
 from sklearn.base import BaseEstimator, TransformerMixin
+
+from TaxiFareModel.data import df_optimized
 from TaxiFareModel.utils import haversine_vectorized
 import pygeohash as gh
 
@@ -11,7 +13,13 @@ dist_args = dict(start_lat="pickup_latitude",
                  end_lon="dropoff_longitude")
 
 
+class CustomEncoder(BaseEstimator, TransformerMixin):
+    def size_optimize(self, df):
+        return df_optimized(df)
+
+
 class TimeFeaturesEncoder(BaseEstimator, TransformerMixin):
+#class TimeFeaturesEncoder(CustomEncoder):
 
     def __init__(self, time_column, time_zone_name='America/New_York'):
         self.time_column = time_column
@@ -73,3 +81,19 @@ class DistanceTransformer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
 
+
+class OptimizeSize(BaseEstimator, TransformerMixin):
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+    def transform(self, X, y=None):
+        X = pd.DataFrame(X.toarray())
+        assert isinstance(X, pd.DataFrame)
+        X = df_optimized(X)
+        if self.verbose:
+            print(X.head())
+        return X
+
+    def fit(self, X, y=None):
+        return self

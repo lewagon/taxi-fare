@@ -1,5 +1,5 @@
-PROJECT_ID=TODO
-BUCKET_NAME=TODO
+PROJECT_ID=wagon-bootcamp-256316
+BUCKET_NAME=wagon-ml-bizot-27
 
 run_locally:
 	@python -W ignore -m ${PACKAGE_NAME}.${FILENAME}
@@ -15,12 +15,13 @@ set_project:
 #         TRAINING
 # ----------------------------------
 PACKAGE_NAME=TaxiFareModel
-FILENAME=trainer
+FILENAME=trainer_mlflow
 JOB_NAME=taxi_fare_training_pipeline_$(shell date +'%Y%m%d_%H%M%S')
 REGION=europe-west1
 PYTHON_VERSION=3.7
 RUNTIME_VERSION=1.15
 FRAMEWORK=scikit-learn
+MACHINE_TYPE=n1-standard-4
 
 gcp_submit_training:
 	gcloud ai-platform jobs submit training ${JOB_NAME} \
@@ -30,7 +31,14 @@ gcp_submit_training:
 		--python-version=${PYTHON_VERSION} \
 		--runtime-version=${RUNTIME_VERSION} \
 		--region ${REGION} \
-		--stream-logs 
+		--scale-tier CUSTOM \
+		--master-machine-type ${MACHINE_TYPE}
+
+gcp_test_multiple_trainings:
+	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-4
+	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-8
+	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-highcpu-8
+	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-16
 
 # ----------------------------------
 #        DEPLOYMENT
