@@ -1,11 +1,11 @@
 import pandas as pd
 from google.cloud import storage
+
 from TaxiFareModel.utils import simple_time_tracker
 
-import numpy as np
-
+#PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
 BUCKET_NAME = "wagon-ml-bizot-27"
-PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
+PATH_INSIDE_BUCKET = "data/bq_complete.csv"
 
 DIST_ARGS = dict(start_lat="pickup_latitude",
                  start_lon="pickup_longitude",
@@ -85,14 +85,14 @@ def infer_dtypes(path):
 
 
 if __name__ == "__main__":
-    params = dict(nrows=100000,
+    params = dict(nrows=10000000,
                   upload=False,
                   local=True,  # set to False to get data from GCP (Storage or BigQuery)
                   optimize=True)
     df = get_data(**params)
     params["optimize"] = False
     df_2 = get_data(**params)
-    m1 = df.memory_usage().sum()
-    m2 = df_2.memory_usage().sum()
+    m1 = df.memory_usage().sum()/1000000
+    m2 = df_2.memory_usage().sum()/1000000
     print(m1, m2, m1 / m2)
     mm = pd.merge(df, df_2, on="key")

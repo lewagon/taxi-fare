@@ -1,6 +1,10 @@
 PROJECT_ID=wagon-bootcamp-256316
 BUCKET_NAME=wagon-ml-bizot-27
 
+# ----------------------------------
+#         LOCAL SET UP
+# ----------------------------------
+
 run_locally:
 	@python -W ignore -m ${PACKAGE_NAME}.${FILENAME}
 
@@ -15,12 +19,9 @@ set_project:
 #         TRAINING
 # ----------------------------------
 PACKAGE_NAME=TaxiFareModel
-FILENAME=trainer_mlflow
+FILENAME=trainer
 JOB_NAME=taxi_fare_training_pipeline_$(shell date +'%Y%m%d_%H%M%S')
 REGION=europe-west1
-PYTHON_VERSION=3.7
-RUNTIME_VERSION=1.15
-FRAMEWORK=scikit-learn
 MACHINE_TYPE=n1-standard-4
 
 gcp_submit_training:
@@ -28,17 +29,17 @@ gcp_submit_training:
 		--job-dir gs://${BUCKET_NAME}/trainings  \
 		--package-path ${PACKAGE_NAME} \
 		--module-name ${PACKAGE_NAME}.${FILENAME} \
-		--python-version=${PYTHON_VERSION} \
-		--runtime-version=${RUNTIME_VERSION} \
-		--region ${REGION} \
+		--python-version 3.7 \
+		--runtime-version 1.15 \
+		--region europe-west1 \
 		--scale-tier CUSTOM \
 		--master-machine-type ${MACHINE_TYPE}
 
 gcp_test_multiple_trainings:
-	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-4
 	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-8
-	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-highcpu-8
 	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-16
+	@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-32
+	#@$(MAKE) gcp_submit_training MACHINE_TYPE=n1-standard-64
 
 # ----------------------------------
 #        DEPLOYMENT
@@ -57,8 +58,8 @@ create_pipeline_version: build_dep upload_dep
 	-@gcloud beta ai-platform versions create ${VERSION_NAME} \
 		--model ${MODEL_NAME} \
 		--origin gs://${BUCKET_NAME}/models/taxi_fare_model/${PATH_TO_MODEL} \
-		--python-version ${PYTHON_VERSION} \
-		--runtime-version ${RUNTIME_VERSION} \
+		--python-version 3.7 \
+		--runtime-version 1.15 \
 		--prediction-class predictor.Predictor \
     	--package-uris gs://${BUCKET_NAME}/trainings/code/${PACKAGE_NAME}-1.0.tar.gz
 
