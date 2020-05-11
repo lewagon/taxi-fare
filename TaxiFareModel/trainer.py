@@ -57,7 +57,8 @@ class Trainer(object):
         del X, y
         self.split = self.kwargs.get("split", True)  # cf doc above
         if self.split:
-            self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train, test_size=0.15)
+            self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train,
+                                                                                  test_size=0.15)
         self.nrows = self.X_train.shape[0]  # nb of rows to train on
         self.log_kwargs_params()
         self.log_machine_specs()
@@ -169,8 +170,9 @@ class Trainer(object):
 
     ### MLFlow methods
     @memoized_property
-    def mlflow_run(self):
-        return self.mlflow_client.create_run(self.mlflow_experiment_id)
+    def mlflow_client(self):
+        mlflow.set_tracking_uri(MLFLOW_URI)
+        return MlflowClient()
 
     @memoized_property
     def mlflow_experiment_id(self):
@@ -180,9 +182,8 @@ class Trainer(object):
             return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
 
     @memoized_property
-    def mlflow_client(self):
-        mlflow.set_tracking_uri(MLFLOW_URI)
-        return MlflowClient()
+    def mlflow_run(self):
+        return self.mlflow_client.create_run(self.mlflow_experiment_id)
 
     def mlflow_log_param(self, key, value):
         if self.mlflow:
@@ -219,9 +220,9 @@ if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
     experiment = "GCP_Instances"
-    params = dict(nrows=40000000,
-                  upload=True,
-                  local=False,  # set to False to get data from GCP (Storage or BigQuery)
+    params = dict(nrows=1000,
+                  upload=False,
+                  local=True,  # set to False to get data from GCP (Storage or BigQuery)
                   gridsearch=False,
                   optimize=True,
                   estimator="RandomForest",
@@ -234,7 +235,7 @@ if __name__ == "__main__":
     X_train = df.drop("fare_amount", axis=1)
     del df
     print("shape: {}".format(X_train.shape))
-    print("size: {} Mb".format(X_train.memory_usage().sum()/1e6))
+    print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
     # Train and save model, locally and
     t = Trainer(X=X_train, y=y_train, **params)
     del X_train, y_train
