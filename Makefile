@@ -11,9 +11,17 @@ run_locally:
 install_requirements:
 	@pip install -r requirements.txt
 
+install:
+	@pip install . -U
+
 set_project:
 	-@gcloud config set project ${PROJECT_ID}
 
+# ----------------------------------
+#         API COMMANDS
+# ----------------------------------
+api:
+	-@python app.py
 
 # ----------------------------------
 #         TRAINING

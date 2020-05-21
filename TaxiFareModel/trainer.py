@@ -220,13 +220,13 @@ if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
     experiment = "GCP_Instances"
-    params = dict(nrows=1000,
+    params = dict(nrows=100000,
                   upload=False,
                   local=True,  # set to False to get data from GCP (Storage or BigQuery)
                   gridsearch=False,
                   optimize=True,
                   estimator="RandomForest",
-                  mlflow=True,  # set to True to log params to mlflow
+                  mlflow=False,  # set to True to log params to mlflow
                   experiment_name=experiment)
     print("############   Loading Data   ############")
     df = get_data(**params)

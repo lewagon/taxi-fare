@@ -9,3 +9,5 @@ xgboost==0.90
 mlflow
 memoized_property
 psutil
+#flask==1.1.1
+flask
