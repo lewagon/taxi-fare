@@ -1,5 +1,5 @@
-*.joblib
 __pycache__
-data
+data/data_bq_complete.csv.gz
+data/data_data_10Mill.csv
 .idea
 jupy/.ipynb_checkpoints

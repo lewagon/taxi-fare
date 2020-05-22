@@ -1,0 +1,1 @@
+web: make install clean && streamlit run process/viz.py

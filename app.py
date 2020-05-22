@@ -8,7 +8,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-PATH_TO_MODEL = "model.joblib"
+PATH_TO_MODEL = "data/model.joblib"
 NYC_DEFAULT_LAT = 40.7808
 NYC_DEFAULT_LNG = -73.9772
 
