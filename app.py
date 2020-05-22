@@ -1,26 +1,17 @@
+from TaxiFareModel.data import BUCKET_NAME
 from flask import Flask
 from flask import request, jsonify
 from datetime import datetime
 import joblib
 import pytz
 import pandas as pd
+from TaxiFareModel.gcp import download_model
 
 app = Flask(__name__)
 
 PATH_TO_MODEL = "data/model.joblib"
 NYC_DEFAULT_LAT = 40.7808
 NYC_DEFAULT_LNG = -73.9772
-
-
-def predict_json_gcp(project, model, instances, version=None):
-    service = googleapiclient.discovery.build('ml', 'v1')
-    name = 'projects/{}/models/{}'.format(project, model)
-    if version is not None:
-        name += '/versions/{}'.format(version)
-    response = service.projects().predict(name=name, body={'instances': instances}).execute()
-    if 'error' in response:
-        raise RuntimeError(response['error'])
-    return response["predictions"]
 
 
 def format_input(input):
@@ -43,7 +34,18 @@ def format_input(input):
     return formated_input
 
 
-pipeline = joblib.load(PATH_TO_MODEL)
+pipeline_def = {'pipeline': joblib.load(PATH_TO_MODEL),
+            'from_gcp': False}
+
+
+@app.route('/set_model', methods=['GET', 'POST'])
+def set_model():
+    inputs = request.get_json()
+    model_dir = inputs["model_directory"]
+    print(model_dir)
+    pipeline_def["pipeline"] = download_model(model_directory="PipelineTest", rm=True)
+    pipeline_def["from_gcp"] = True
+    return "Pipeline loaded from gcp defined as new pipeline"
 
 
 @app.route('/predict_fare', methods=['GET', 'POST'])
@@ -54,6 +56,8 @@ def predict_fare():
     inputs = [format_input(point) for point in inputs]
     # Convert inputs to dataframe to feed as input to our pipeline
     X = pd.DataFrame(inputs)
+    pipeline = pipeline_def["pipeline"]
+    print(pipeline_def["from_gcp"])
     results = pipeline.predict(X)
     return {"predictions": list(results)}
 

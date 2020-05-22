@@ -1,20 +1,12 @@
 # Deploy ML API serving predictions
 Here you'll be able to deploy a minimal API to return predictions from pretrained model.
-
-## 
-This package serves two purposes:
-- give a package structure to deploy future ML model to production if you have those needs in your carreer as a data scientist
-- give a complete solution for the [last exercice](https://kitt.lewagon.com/camps/359/challenges?path=05-Production%2F05-Deploy-to-Production-day2%2F05-Deploy-on-All-data) of week 5:
-     - A pipeline with `custom preprocessing` (Custom encoders) 
-     - A RandomSearchCV for Hyperparameter tuning
-     - A custom predictor class to make our own prdictions
      
 ## Prerequisite
 In the following, we suppose that:
  
-1. You have a GCP account, a project, a Service Account key on your disk and its path set up in the `GOOGLE_APPLICATION_CREDENTIALS` env key
-2. The "AI Platform Training & Prediction" + "Compute Engine API" on the console for your project
-3. A bucket on Google Cloud storage containing a file `data/data_taxi_trips_train_sample_set.csv`
+1. You have previously trained a pipeline
+2. You have saved this model either on GCP Cloud Storage or inside `data/` 
+3. If your pipeline included custom transformers, they should be present inside  
 4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
 
 ## Clone this repo and enter to branch solution
@@ -24,29 +16,37 @@ In your terminal, run:
 ```bash
 mkdir ~/code/lewagon && cd $_
 git clone git@github.com:lewagon/taxi-fare.git
-mv taxi-fare taxi-fare-deployment
-cd taxi-fare-deployment
-git checkout solution
+cd taxi-fare
+git checkout api_ml
 stt # Open the project in Sublime Text!
 ```
 
 ## Structure of the project
 ```
-├── Makefile          => all necessary commands
+├── Makefile        => usual cookbook to easily run reproducible commands
+├── Procfile        => file needed for heroku deployment
 ├── README.md
-├── TaxiFareModel     => python package to be deployed and run on GCP
+├── TaxiFareModel   => python package usefull to call function fron app.py and to install custom transformers
 │   ├── __init__.py
 │   ├── data.py
-│   ├── encoders.py
-│   ├── trainer.py    => main file that will be run by GCP
+│   ├── encoders.py  => custom transformers used inside model.joblib
+│   ├── gcp.py
+│   ├── main.py
+│   ├── trainer.py
 │   └── utils.py
-├── predict.py        => Script to get predictions from our deployed model
-├── predictor.py      => Custom prediction class
+├── app.py
+├── data
+│   └── model.joblib
+├── jupy
+│   ├── Predict.ipynb
+│   └── taxifare_dask.ipynb
+├── predict.py
+├── predictor.py
 ├── requirements.txt
-└── setup.py          => file to specify dependencies and packe info for deployment
+└── setup.py
 ```
 
-## Install correct python dependencies
+## Add 
 
 ```bash
 pip install -r requirements.txt

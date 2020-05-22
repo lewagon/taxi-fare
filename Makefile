@@ -33,6 +33,7 @@ heroku_create_app:
 deploy_heroku:
 	-@git push heroku api_ml:master
 	-@heroku ps:scale web=1
+	-@heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< /Users/jbizot/Documents/wagon-bootcamp-256316-51756099e206.json)"
 
 
 # ----------------------------------
