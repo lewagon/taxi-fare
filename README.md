@@ -51,43 +51,35 @@ stt # Open the project in Sublime Text!
 ### Python code
 
 Replace variable inside `trainer.py` and `data.py` with your variables:
-- `BUCKET_NAME` in `data.py` for downlaoding models from GCP
+- `BUCKET_NAME`, and `PROJECT_ID` in `__init__.py` for downloading models from GCP
 
 ### Makefile Code
 Do the same inside Makefile with:
-- `PROJECT_ID`, `BUCKET_NAME` for submitting training tasks
-- `MODEL_NAME`, and `VERSION_NAME` for deployment
-- `PATH_TO_MODEL` which should be the same as `MODEL_DIRECTY` in trainer.py 
+- `PROJECT_ID`, `BUCKET_NAME` to get models 
 
-## Deploy first test model
+## Deploy app locally
 
-Ensure that the code runs locally:
+Ensure that the app runs locally:
 ```bash
-make run_locally
+python app.py
 ```
 
-Submit training to GCP:
-```sql
-make gcp_submit_training 
-```
-
-Deploy your model by creating a version you named in the Makefile:
-- Make sure you have created a [model](https://console.cloud.google.com/ai-platform/models?project=wagon-bootcamp-256316) first, then run:
+## Deploy to heroku
+login to heroku
 ```bash
-make create_pipeline_version
+make heroku_login
 ```
 
-And there you go, you just deployed your model  
-
-**NB**: you trained on a few samples, just for you to check that workflow is funcionnal, you would have to train on more samples in the future
-
-## Use your model
-Inspect `predict.py`, replace variables to get data from your storage and test that GCP correctly returns predictions:
+create app on heroku
 ```bash
-python predict.py
+make heroku_create_app
 ```
 
-## Use it to improve your model
-- Train on more samples
-- chose more paramters for hyperparameter tuning
-- add Custom preprocessing
+Deploy to heroku
+```bash
+make deploy_heroku
+```
+
+## Test you api
+Open `Predict.ipynb` under `jupy` folder and start interrogating your api
+

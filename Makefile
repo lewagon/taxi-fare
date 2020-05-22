@@ -1,21 +1,8 @@
-PROJECT_ID=wagon-bootcamp-256316
-BUCKET_NAME=wagon-ml-bizot-27
-
 # ----------------------------------
 #         LOCAL SET UP
 # ----------------------------------
-
-run_locally:
-	@python -W ignore -m ${PACKAGE_NAME}.${FILENAME}
-
-install_requirements:
-	@pip install -r requirements.txt
-
 install:
 	@pip install . -U
-
-set_project:
-	-@gcloud config set project ${PROJECT_ID}
 
 # ----------------------------------
 #         API COMMANDS
@@ -33,6 +20,8 @@ heroku_create_app:
 deploy_heroku:
 	-@git push heroku api_ml:master
 	-@heroku ps:scale web=1
+
+heroku_set_gcp_env:
 	-@heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< /Users/jbizot/Documents/wagon-bootcamp-256316-51756099e206.json)"
 
 # ----------------------------------

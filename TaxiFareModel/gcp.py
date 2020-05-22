@@ -14,8 +14,7 @@ def get_credentials():
 
 
 def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
-    creds = get_credentials()
-    client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
+    client = storage.Client().bucket(bucket)
 
     storage_location = '{}/{}/{}/{}'.format(
         'models',
@@ -31,7 +30,8 @@ def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
 
 
 def download_model(model_directory="PipelineTest", bucket=BUCKET_NAME, rm=True):
-    client = storage.Client().bucket(bucket)
+    creds = get_credentials()
+    client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
 
     storage_location = '{}/{}/{}/{}'.format(
         'models',
