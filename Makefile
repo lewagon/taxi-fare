@@ -31,7 +31,7 @@ heroku_create_app:
 	-@heroku create ${APP_NAME}
 
 deploy_heroku:
-	-@git push heroku master
+	-@git push heroku api_ml:master
 	-@heroku ps:scale web=1
 
 
