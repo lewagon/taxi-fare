@@ -7,10 +7,11 @@ In the following, we suppose that:
 1. You have previously trained a pipeline
 2. You have saved this model either on GCP Cloud Storage or inside `data/` 
 3. If your pipeline included custom transformers, they should be present inside  `TaxiFaremodel/encoders.py`
-4. you have created an [free heroku account](https://signup.heroku.com/)
+4. You have installed [heroku cli](https://devcenter.heroku.com/articles/heroku-cli)
+5. you have created an [free heroku account](https://signup.heroku.com/)
 
 
-## Clone this repo and enter to branch solution
+## Clone this repo and enter to branch api_ml
 
 In your terminal, run:
 
@@ -67,19 +68,24 @@ python app.py
 ## Deploy to heroku
 login to heroku
 ```bash
-make heroku_login
+heroku login
 ```
 
 create app on heroku
 ```bash
-make heroku_create_app
+heroku create YOUR_APP_NAME
 ```
 
-Deploy to heroku
+Deploy to heroku with git
 ```bash
-make deploy_heroku
+git push heroku api_ml:master
 ```
+Then
+```bash
+heroku ps:scale web=1
+```
+click on the link `https://YOUR_APP_NAME.herokuapp.com/` and it should return `OK`
 
-## Test you api
+## Use your api te obtain predictions
 Open `Predict.ipynb` under `jupy` folder and start interrogating your api
 
