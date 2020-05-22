@@ -1,9 +1,5 @@
-# Taxi Fare deployment package
-
-You have the structure and a sample code for deploying a custom pipeline to production  
-
-The code is very similar to the one you already implemented during week 5  
-
+# Deploy ML API serving predictions
+Here you'll be able to deploy a minimal API to return predictions from pretrained model.
 
 ## 
 This package serves two purposes:

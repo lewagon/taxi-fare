@@ -1,7 +1,6 @@
 from flask import Flask
 from flask import request, jsonify
 from datetime import datetime
-import googleapiclient.discovery
 import joblib
 import pytz
 import pandas as pd
