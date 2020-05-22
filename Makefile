@@ -24,16 +24,15 @@ APP_NAME=api-wagon
 api:
 	-@python app.py
 
-login:
+heroku_login:
 	-@heroku login
 
-create_app:
+heroku_create_app:
 	-@heroku create ${APP_NAME}
 
 deploy_heroku:
 	-@git push heroku master
 	-@heroku ps:scale web=1
-
 
 
 # ----------------------------------

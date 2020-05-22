@@ -1,1 +1,1 @@
-web: make install clean && streamlit run process/viz.py
+web: pip install . -U && python app.py
