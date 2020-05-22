@@ -2,9 +2,10 @@ import pandas as pd
 from google.cloud import storage
 
 from TaxiFareModel.utils import simple_time_tracker
+from TaxiFareModel import BUCKET_NAME
 
 #PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
-BUCKET_NAME = "wagon-ml-bizot-27"
+
 PATH_INSIDE_BUCKET = "data/bq_complete.csv"
 
 DIST_ARGS = dict(start_lat="pickup_latitude",

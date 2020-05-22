@@ -6,8 +6,9 @@ In the following, we suppose that:
  
 1. You have previously trained a pipeline
 2. You have saved this model either on GCP Cloud Storage or inside `data/` 
-3. If your pipeline included custom transformers, they should be present inside  
-4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
+3. If your pipeline included custom transformers, they should be present inside  `TaxiFaremodel/encoders.py`
+4. you have created an [free heroku account](https://signup.heroku.com/)
+
 
 ## Clone this repo and enter to branch solution
 
@@ -38,26 +39,19 @@ stt # Open the project in Sublime Text!
 ├── data
 │   └── model.joblib
 ├── jupy
-│   ├── Predict.ipynb
-│   └── taxifare_dask.ipynb
+│   ├── Predict.ipynb => notebook to interact easily with your api
 ├── predict.py
 ├── predictor.py
 ├── requirements.txt
 └── setup.py
 ```
 
-## Add 
-
-```bash
-pip install -r requirements.txt
-```
 
 ## Adapt code to your settings
 ### Python code
 
 Replace variable inside `trainer.py` and `data.py` with your variables:
-- `PATH_INSIDE_BUCKET` and `BUCKET_NAME` in `data.py` for downlaoding/uploading data from your Storage
-- `MODEL_DIRECTY` which indicates where to store your `model.joblib` file
+- `BUCKET_NAME` in `data.py` for downlaoding models from GCP
 
 ### Makefile Code
 Do the same inside Makefile with:

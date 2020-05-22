@@ -1,14 +1,21 @@
+import json
 import os
 import joblib
 
 from google.cloud import storage
 from termcolor import colored
+from TaxiFareModel import BUCKET_NAME, PROJECT_ID
 
-from TaxiFareModel.data import BUCKET_NAME
+
+def get_credentials():
+    credentials_raw = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    creds = json.loads(credentials_raw)
+    return creds
 
 
 def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
-    client = storage.Client().bucket(bucket)
+    creds = get_credentials()
+    client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
 
     storage_location = '{}/{}/{}/{}'.format(
         'models',
