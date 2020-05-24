@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 import warnings
+from tempfile import mkdtemp
 
 import category_encoders as ce
 import joblib
@@ -93,6 +94,9 @@ class Trainer(object):
         return model
 
     def set_pipeline(self):
+        memory = self.kwargs.get("pipeline_memory", None)
+        if memory:
+             memory = mkdtemp()
 
         pipe_time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
                                            OneHotEncoder(handle_unknown='ignore'))
@@ -107,7 +111,7 @@ class Trainer(object):
 
         self.pipeline = Pipeline(steps=[
             ('features', features_encoder),
-            ('rgs', self.get_estimator())])
+            ('rgs', self.get_estimator())], memory=memory)
 
         if self.optimize:
             self.pipeline.steps.insert(-1, ['optimize_size', OptimizeSize(verbose=False)])
@@ -227,7 +231,8 @@ if __name__ == "__main__":
                   optimize=True,
                   estimator="RandomForest",
                   mlflow=True,  # set to True to log params to mlflow
-                  experiment_name=experiment)
+                  experiment_name=experiment,
+                  pipeline_memory=False)
     print("############   Loading Data   ############")
     df = get_data(**params)
     df = clean_df(df)
