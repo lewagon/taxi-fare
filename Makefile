@@ -64,8 +64,10 @@ create_pipeline_version: build_dep upload_dep
     	--package-uris gs://${BUCKET_NAME}/trainings/code/${PACKAGE_NAME}-1.0.tar.gz
 
 # ----------------------------------
-#    CLEANING COMMAND
+#    LOCAL INSTALL COMMANDS
 # ----------------------------------
+install:
+	@pip install . -U
 
 
 clean:
