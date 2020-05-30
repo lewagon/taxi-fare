@@ -20,7 +20,8 @@ from termcolor import colored
 from xgboost import XGBRegressor
 
 from TaxiFareModel.data import get_data, clean_df, DIST_ARGS
-from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize
+from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize, Direction, \
+    DistanceToCenter
 from TaxiFareModel.gcp import storage_upload
 from TaxiFareModel.utils import compute_rmse, simple_time_tracker
 
@@ -47,7 +48,7 @@ class Trainer(object):
         """
         self.pipeline = None
         self.kwargs = kwargs
-        self.grid = kwargs.get("gridsearch", False)  # apply gridsearch if True
+        self.gridsearch = kwargs.get("gridsearch", False)  # apply gridsearch if True
         self.local = kwargs.get("local", True)  # if True training is done locally
         self.optimize = kwargs.get("optimize", False)  # Optimizes size of Training Data if set to True
         self.mlflow = kwargs.get("mlflow", False)  # if True log info to nlflow
@@ -95,19 +96,33 @@ class Trainer(object):
 
     def set_pipeline(self):
         memory = self.kwargs.get("pipeline_memory", None)
+        dist = self.kwargs.get("distance_type", "euclidian")
+        feateng_steps = self.kwargs.get("feateng", ["distance", "time_features"])
         if memory:
              memory = mkdtemp()
 
+        # Define feature engineering pipeline blocks here
         pipe_time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
                                            OneHotEncoder(handle_unknown='ignore'))
-        pipe_distance = make_pipeline(DistanceTransformer(**DIST_ARGS), StandardScaler())
+        pipe_distance = make_pipeline(DistanceTransformer(distance_type=dist, **DIST_ARGS), StandardScaler())
         pipe_geohash = make_pipeline(AddGeohash(), ce.HashingEncoder())
+        pipe_direction = make_pipeline(Direction(), StandardScaler())
+        pipe_distance_to_center = make_pipeline(DistanceToCenter(), StandardScaler())
 
-        features_encoder = ColumnTransformer([
+        # Define default feature engineering blocs
+        feateng_blocks = [
             ('distance', pipe_distance, list(DIST_ARGS.values())),
             ('time_features', pipe_time_features, ['pickup_datetime']),
-            ('geohash', pipe_geohash, list(DIST_ARGS.values()))
-        ], n_jobs=None, remainder="drop")
+            ('geohash', pipe_geohash, list(DIST_ARGS.values())),
+            ('direction', pipe_direction, list(DIST_ARGS.values())),
+            ('distance_to_center', pipe_distance_to_center, list(DIST_ARGS.values())),
+        ]
+        # Filter out some bocks according to input parameters
+        for bloc in feateng_blocks:
+            if bloc[0] not in feateng_steps:
+                feateng_blocks.remove(bloc)
+
+        features_encoder = ColumnTransformer(feateng_blocks, n_jobs=None, remainder="drop")
 
         self.pipeline = Pipeline(steps=[
             ('features', features_encoder),
@@ -130,13 +145,14 @@ class Trainer(object):
                                            cv=2,
                                            verbose=1,
                                            random_state=42,
-                                           n_jobs=None)
+                                           n_jobs=-1)
+                                           #pre_dispatch=None)
 
     @simple_time_tracker
-    def train(self, gridsearch=False):
+    def train(self):
         tic = time.time()
         self.set_pipeline()
-        if gridsearch:
+        if self.gridsearch:
             self.add_grid_search()
         self.pipeline.fit(self.X_train, self.y_train)
         # mlflow logs
@@ -224,15 +240,17 @@ if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
     experiment = "GCP_Instances"
-    params = dict(nrows=1000,
+    params = dict(nrows=10000,
                   upload=False,
                   local=True,  # set to False to get data from GCP (Storage or BigQuery)
                   gridsearch=False,
                   optimize=True,
                   estimator="RandomForest",
-                  mlflow=True,  # set to True to log params to mlflow
+                  mlflow=False,  # set to True to log params to mlflow
                   experiment_name=experiment,
-                  pipeline_memory=False)
+                  pipeline_memory=None,
+                  distance_type="manhattan",
+                  feateng=["distance_to_center", "direction", "distance", "time_features"])
     print("############   Loading Data   ############")
     df = get_data(**params)
     df = clean_df(df)

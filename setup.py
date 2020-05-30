@@ -16,7 +16,7 @@ REQUIRED_PACKAGES = [
 
 setup(
     name='TaxiFareModel',
-    version='1.0',
+    version='1.1',
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),
     scripts=['predictor.py'],

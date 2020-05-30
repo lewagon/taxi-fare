@@ -32,6 +32,10 @@ def get_data(nrows=10000, local=False, optimize=False, **kwargs):
 
 
 def clean_df(df, test=False):
+    """ Cleaning Data based on Kaggle test sample
+    - remove high fare amount data points
+    - keep samples where coordinate wihtin test range
+    """
     df = df.dropna(how='any', axis='rows')
     df = df[(df.dropoff_latitude != 0) | (df.dropoff_longitude != 0)]
     df = df[(df.pickup_latitude != 0) | (df.pickup_longitude != 0)]
