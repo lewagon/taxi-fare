@@ -1,6 +1,9 @@
 import time
+import herepy
 
 import numpy as np
+
+HERE_API_KEY = 'hYjanuWQ92oW2KK_Um_1mmNuR7jW14th3hst9jNO_sc'  # SIGN in to HERE FIRST for freemium plan (no need for Credit card)
 
 
 def haversine_vectorized(df,
@@ -39,6 +42,34 @@ def minkowski_distance(df, p,
 
 def compute_rmse(y_pred, y_true):
     return np.sqrt(((y_pred - y_true) ** 2).mean())
+
+
+###################
+#  GEOCODER HERE  #
+###################
+def reverse_geocoder_here(coords, token=HERE_API_KEY):
+    """
+    coords: (lat, lng)
+    ==> 4 Av du General de Gaulle
+    """
+    geocoderReverseApi = herepy.GeocoderReverseApi(token)
+    res = geocoderReverseApi.retrieve_addresses(coords)
+    res = res.as_dict()
+    adress = res["Response"]["View"][0]["Result"][0]["Location"]["Address"]
+    return adress
+
+
+def geocoder_here(adress, token=HERE_API_KEY):
+    """
+    adress: 4 Av du General de Gaulle
+     ==>  {'Latitude': 48.85395, 'Longitude': 2.27758}
+    """
+    geocoderApi = herepy.GeocoderApi(api_key=token)
+    res = geocoderApi.free_form(adress)
+    res = res.as_dict()
+    coords = res["Response"]["View"][0]["Result"][0]["Location"]["DisplayPosition"]
+    coords = {k.lower(): v for k, v in coords.items()}
+    return coords
 
 
 ################

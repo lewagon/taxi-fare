@@ -9,3 +9,4 @@ xgboost==0.90
 mlflow
 memoized_property
 psutil
+herepy

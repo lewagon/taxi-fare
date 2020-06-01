@@ -14,6 +14,8 @@ install_requirements:
 set_project:
 	-@gcloud config set project ${PROJECT_ID}
 
+streamlit_local:
+	-@streamlit run TaxiFareModel/streamlit.py
 
 # ----------------------------------
 #         TRAINING

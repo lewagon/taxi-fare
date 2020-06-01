@@ -1,5 +1,6 @@
 import os
 
+import joblib
 from google.cloud import storage
 from termcolor import colored
 
@@ -22,8 +23,9 @@ def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
         os.remove('model.joblib')
 
 def download_model(model_directory="PipelineTest", bucket=BUCKET_NAME, rm=True):
-    creds = get_credentials()
-    client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
+    #creds = get_credentials()
+    #client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
+    client = storage.Client().bucket(bucket)
 
     storage_location = '{}/{}/{}/{}'.format(
         'models',
@@ -32,7 +34,7 @@ def download_model(model_directory="PipelineTest", bucket=BUCKET_NAME, rm=True):
         'model.joblib')
     blob = client.blob(storage_location)
     blob.download_to_filename('model.joblib')
-    print(f"=> pipeline downloaded from storage")
+    print(f'=> pipeline downloaded from storage')
     model = joblib.load('model.joblib')
     if rm:
         os.remove('model.joblib')
