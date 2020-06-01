@@ -1,6 +1,6 @@
-# Taxi Fare deployment package
+# Taxi Fare Predictor
 
-You have the structure and a sample code for deploying a custom pipeline to production  
+You have the structure and a sample code for deploying a predictor app on streamlit
 
 The code is very similar to the one you already implemented during week 5  
 
@@ -17,11 +17,10 @@ This package serves two purposes:
 In the following, we suppose that:
  
 1. You have a GCP account, a project, a Service Account key on your disk and its path set up in the `GOOGLE_APPLICATION_CREDENTIALS` env key
-2. The "AI Platform Training & Prediction" + "Compute Engine API" on the console for your project
-3. A bucket on Google Cloud storage containing a file `data/data_taxi_trips_train_sample_set.csv`
-4. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
+2. A bucket on Google Cloud storage containing a previously trained model
+3. You are logged in (`gcloud auth login`) and you've set the project (`gcloud config set project PROJECT_ID`)
 
-## Clone this repo and enter to branch solution
+## Clone this repo and enter to branch streamlit
 
 In your terminal, run:
 
@@ -30,24 +29,8 @@ mkdir ~/code/lewagon && cd $_
 git clone git@github.com:lewagon/taxi-fare.git
 mv taxi-fare taxi-fare-deployment
 cd taxi-fare-deployment
-git checkout solution
+git checkout streamlit
 stt # Open the project in Sublime Text!
-```
-
-## Structure of the project
-```
-├── Makefile          => all necessary commands
-├── README.md
-├── TaxiFareModel     => python package to be deployed and run on GCP
-│   ├── __init__.py
-│   ├── data.py
-│   ├── encoders.py
-│   ├── trainer.py    => main file that will be run by GCP
-│   └── utils.py
-├── predict.py        => Script to get predictions from our deployed model
-├── predictor.py      => Custom prediction class
-├── requirements.txt
-└── setup.py          => file to specify dependencies and packe info for deployment
 ```
 
 ## Install correct python dependencies
@@ -57,47 +40,20 @@ pip install -r requirements.txt
 ```
 
 ## Adapt code to your settings
-### Python code
 
-Replace variable inside `trainer.py` and `data.py` with your variables:
-- `PATH_INSIDE_BUCKET` and `BUCKET_NAME` in `data.py` for downlaoding/uploading data from your Storage
-- `MODEL_DIRECTY` which indicates where to store your `model.joblib` file
+Replace variable inside `__init__.py` with your variables:
+- `PATH_INSIDE_BUCKET` to download data from storage
+- `MODEL_DIRECTY_INSISDE_BUCKET` and `BUCKET_NAME` for uploading and downloading model from GCP Storage
 
-### Makefile Code
-Do the same inside Makefile with:
-- `PROJECT_ID`, `BUCKET_NAME` for submitting training tasks
-- `MODEL_NAME`, and `VERSION_NAME` for deployment
-- `PATH_TO_MODEL` which should be the same as `MODEL_DIRECTY` in trainer.py 
 
-## Deploy first test model
+## Trained very simple model locally and upload it to GCP
 
-Ensure that the code runs locally:
 ```bash
 make run_locally
 ```
 
-Submit training to GCP:
-```sql
-make gcp_submit_training 
+## Launch your predictor locally
+```
+make streamlit_local
 ```
 
-Deploy your model by creating a version you named in the Makefile:
-- Make sure you have created a [model](https://console.cloud.google.com/ai-platform/models?project=wagon-bootcamp-256316) first, then run:
-```bash
-make create_pipeline_version
-```
-
-And there you go, you just deployed your model  
-
-**NB**: you trained on a few samples, just for you to check that workflow is funcionnal, you would have to train on more samples in the future
-
-## Use your model
-Inspect `predict.py`, replace variables to get data from your storage and test that GCP correctly returns predictions:
-```bash
-python predict.py
-```
-
-## Use it to improve your model
-- Train on more samples
-- chose more paramters for hyperparameter tuning
-- add Custom preprocessing

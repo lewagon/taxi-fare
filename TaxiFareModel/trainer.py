@@ -19,13 +19,13 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
 
+from TaxiFareModel import MODEL_DIRECTY_INSISDE_BUCKET
 from TaxiFareModel.data import get_data, clean_df, DIST_ARGS
 from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize, Direction, \
     DistanceToCenter
 from TaxiFareModel.gcp import storage_upload
 from TaxiFareModel.utils import compute_rmse, simple_time_tracker
 
-MODEL_DIRECTY = "PipelineTest"  # must the same as PATH_TO_MODEL inside Makefile
 MLFLOW_URI = "http://35.210.166.253:5000"
 
 
@@ -206,7 +206,7 @@ class Trainer(object):
         print(colored("model.joblib saved locally", "green"))
 
         if not self.local:
-            storage_upload(model_directory=MODEL_DIRECTY)
+            storage_upload(model_directory=MODEL_DIRECTY_INSISDE_BUCKET)
 
     ### MLFlow methods
     @memoized_property
@@ -266,11 +266,11 @@ if __name__ == "__main__":
                   gridsearch=False,
                   optimize=True,
                   estimator="xgboost",
-                  mlflow=True,  # set to True to log params to mlflow
+                  mlflow=False,  # set to True to log params to mlflow
                   experiment_name=experiment,
                   pipeline_memory=None,
                   distance_type="manhattan",
-                  feateng=["distance_to_center", "direction", "distance", "time_features", "geohash"])
+                  feateng=["distance_to_center", "direction", "distance", "time_features"])
     print("############   Loading Data   ############")
     df = get_data(**params)
     df = clean_df(df)
@@ -280,6 +280,7 @@ if __name__ == "__main__":
     print("shape: {}".format(X_train.shape))
     print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
     # Train and save model, locally and
+    print(X_train.head())
     t = Trainer(X=X_train, y=y_train, **params)
     del X_train, y_train
     print(colored("############  Training model   ############", "red"))

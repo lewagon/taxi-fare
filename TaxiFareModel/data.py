@@ -1,11 +1,11 @@
 import pandas as pd
 from google.cloud import storage
 
+from TaxiFareModel import BUCKET_NAME, PATH_INSIDE_BUCKET
 from TaxiFareModel.utils import simple_time_tracker
 
 #PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
-BUCKET_NAME = "wagon-ml-bizot-27"
-PATH_INSIDE_BUCKET = "data/bq_complete.csv"
+
 
 DIST_ARGS = dict(start_lat="pickup_latitude",
                  start_lon="pickup_longitude",
@@ -28,6 +28,8 @@ def get_data(nrows=10000, local=False, optimize=False, **kwargs):
         df = pd.read_csv(path, nrows=nrows, dtype=cols)
     else:
         df = pd.read_csv(path, nrows=nrows)
+    if "test" in list(df):
+        df.drop("test", axis=1, inplace=True)
     return df
 
 
