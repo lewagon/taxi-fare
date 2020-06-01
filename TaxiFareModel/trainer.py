@@ -13,7 +13,7 @@ from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import Lasso, Ridge, LinearRegression
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
@@ -148,6 +148,26 @@ class Trainer(object):
                                            n_jobs=-1)
                                            #pre_dispatch=None)
 
+    def add_random_search(self):
+        """"
+        Apply Gridsearch on self.params defined in get_estimator
+        {'rgs__n_estimators': [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)],
+          'rgs__max_features' : ['auto', 'sqrt'],
+          'rgs__max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
+        """
+        # Here to apply ramdom search to pipeline, need to follow naming "rgs__paramname"
+        params = {"rgs__" + k: v for k, v in self.model_params.items()}
+        self.pipeline = GridSearchCV(estimator=self.pipeline, param_distributions=params,
+                                           n_iter=10,
+                                           cv=2,
+                                           verbose=1,
+                                           random_state=42,
+                                           n_jobs=-1)
+                                           #pre_dispatch=None)
+
+    def add_hyperopt_search(self):
+        pass
+
     @simple_time_tracker
     def train(self):
         tic = time.time()
@@ -239,18 +259,18 @@ class Trainer(object):
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
-    experiment = "GCP_Instances"
+    experiment = "final_runs"
     params = dict(nrows=10000,
                   upload=False,
-                  local=True,  # set to False to get data from GCP (Storage or BigQuery)
+                  local=False,  # set to False to get data from GCP (Storage or BigQuery)
                   gridsearch=False,
                   optimize=True,
-                  estimator="RandomForest",
-                  mlflow=False,  # set to True to log params to mlflow
+                  estimator="xgboost",
+                  mlflow=True,  # set to True to log params to mlflow
                   experiment_name=experiment,
                   pipeline_memory=None,
                   distance_type="manhattan",
-                  feateng=["distance_to_center", "direction", "distance", "time_features"])
+                  feateng=["distance_to_center", "direction", "distance", "time_features", "geohash"])
     print("############   Loading Data   ############")
     df = get_data(**params)
     df = clean_df(df)
