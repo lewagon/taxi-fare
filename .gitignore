@@ -3,3 +3,6 @@ data/data_bq_complete.csv.gz
 data/data_data_10Mill.csv
 .idea
 jupy/.ipynb_checkpoints
+.ipynb_checkpoints/
+Sandbox_perso.ipynb
+
