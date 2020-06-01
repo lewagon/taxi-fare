@@ -4,14 +4,6 @@ You have the structure and a sample code for deploying a predictor app on stream
 
 The code is very similar to the one you already implemented during week 5  
 
-
-## 
-This package serves two purposes:
-- give a package structure to deploy future ML model to production if you have those needs in your carreer as a data scientist
-- give a complete solution for the [last exercice](https://kitt.lewagon.com/camps/359/challenges?path=05-Production%2F05-Deploy-to-Production-day2%2F05-Deploy-on-All-data) of week 5:
-     - A pipeline with `custom preprocessing` (Custom encoders) 
-     - A RandomSearchCV for Hyperparameter tuning
-     - A custom predictor class to make our own prdictions
      
 ## Prerequisite
 In the following, we suppose that:
