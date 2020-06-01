@@ -3,4 +3,5 @@ __pycache__
 data
 .idea
 jupy/.ipynb_checkpoints
+.ipynb_checkpoints
 Sandbox_perso.ipynb
