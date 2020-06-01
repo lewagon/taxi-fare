@@ -58,11 +58,6 @@ def main():
 
     if analysis == "prediction":
         st.header("TaxiFare Model predictions")
-        # dot = pipeline2dot(pipeline, df)
-        # RenderJsDot(dot)
-        # apikey_gmaps = 'AIzaSyD9GUiv-boZqngK5EoO0mCWiVUpfJyMbX0'  # (a valid API key is needed to customize map styles)
-        # gmap = gmplot.GoogleMapPlotter(37.766956, -122.438481, 13, apikey=apikey)
-        # st.pyplot()
         pickup_adress = st.text_input("pickup adress", "251 Church St, New York, NY 10013")
         dropoff_adress = st.text_input("dropoff adress", "434 6th Ave, New York, NY 10011")
         pickup_coords = geocoder_here(pickup_adress)
