@@ -1,5 +1,7 @@
 PROJECT_ID=wagon-bootcamp-256316
 BUCKET_NAME=wagon-ml-bizot-27
+PACKAGE_NAME=TaxiFareModel
+FILENAME=main
 
 # ----------------------------------
 #         LOCAL SET UP
@@ -18,11 +20,9 @@ set_project:
 # ----------------------------------
 #         TRAINING
 # ----------------------------------
-PACKAGE_NAME=TaxiFareModel
-FILENAME=trainer
 JOB_NAME=taxi_fare_training_pipeline_$(shell date +'%Y%m%d_%H%M%S')
 REGION=europe-west1
-MACHINE_TYPE=n1-standard-4
+MACHINE_TYPE=n1-standard-16
 
 gcp_submit_training:
 	gcloud ai-platform jobs submit training ${JOB_NAME} \

@@ -6,26 +6,42 @@ from termcolor import colored
 from TaxiFareModel.data import clean_df, get_data
 from TaxiFareModel.trainer import Trainer
 
-default_params = dict(nrows=40000,
+default_params = dict(nrows=10000,
                       upload=False,
                       local=True,  # set to False to get data from GCP (Storage or BigQuery)
                       gridsearch=False,
-                      optimize=True,
-                      estimator="Linear",
+                      optimize=False,
+                      estimator="xgboost",
                       mlflow=False,  # set to True to log params to mlflow
-                      experiment_name="TaxifareModel")
+                      experiment_name="test",
+                      pipeline_memory=None,
+                      distance_type="manhattan",
+                      feateng=["distance_to_center", "direction", "distance", "time_features", "geohash"])
 
 
-def get_experiment_param(exp='local'):
+def get_experiment_param(exp='local', nrows=1000000, gridsearch=False):
     new_params = default_params
-    if exp == "local":
-        pass
+    params = default_params
+    params["experiment_name"] = exp
+    if exp in ["local", "test"]:
+        return default_params
     elif exp == "gcp_machine_types":
         new_params.update(dict(experiment="GCP_Instances",
                                mlflow=True,
                                upload=True,
                                local=False,
                                estimator="RandomForest"))
+    elif exp == "train_scale":
+        new_params.update(dict(experiment=exp,
+                               nrows=nrows,
+                               mlflow=True,
+                               upload=True,
+                               pipeline_memory=True,
+                               gridsearch=gridsearch,
+                               local=False,
+                               optimize=True,
+                               estimator="xgboost"))
+
     else:
         new_params = default_params
     return new_params
@@ -34,8 +50,10 @@ def get_experiment_param(exp='local'):
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
-    exp = "gcp_machine_types"
-    params = get_experiment_param(exp=exp)
+    exp = "train_scale"
+    params = get_experiment_param(exp=exp, gridsearch=False, nrows=10000000)
+    params["pipeline_memory"] = True
+    params["n_jobs"] = -1
     pprint(params)
     print("############   Loading Data   ############")
     df = get_data(**params)
