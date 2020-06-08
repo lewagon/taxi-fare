@@ -12,16 +12,17 @@ from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Lasso, Ridge, LinearRegression
 from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, RobustScaler
 from termcolor import colored
 from xgboost import XGBRegressor
 
 from TaxiFareModel.data import get_data, clean_df, DIST_ARGS
 from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize, Direction, \
-    DistanceToCenter
+    DistanceToCenter, AddWeatherData
 from TaxiFareModel.gcp import storage_upload
 from TaxiFareModel.utils import compute_rmse, simple_time_tracker
 
@@ -108,10 +109,12 @@ class Trainer(object):
         # Define feature engineering pipeline blocks here
         pipe_time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
                                            OneHotEncoder(handle_unknown='ignore'))
-        pipe_distance = make_pipeline(DistanceTransformer(distance_type=dist, **DIST_ARGS), StandardScaler())
+        pipe_distance = make_pipeline(DistanceTransformer(distance_type=dist, **DIST_ARGS), RobustScaler())
         pipe_geohash = make_pipeline(AddGeohash(), ce.HashingEncoder())
-        pipe_direction = make_pipeline(Direction(), StandardScaler())
-        pipe_distance_to_center = make_pipeline(DistanceToCenter(), StandardScaler())
+        pipe_direction = make_pipeline(Direction(), RobustScaler())
+        pipe_distance_to_center = make_pipeline(DistanceToCenter(), RobustScaler())
+        pipe_weather = make_pipeline(AddWeatherData(), SimpleImputer(),RobustScaler())
+
 
         # Define default feature engineering blocs
         feateng_blocks = [
@@ -120,6 +123,7 @@ class Trainer(object):
             ('geohash', pipe_geohash, list(DIST_ARGS.values())),
             ('direction', pipe_direction, list(DIST_ARGS.values())),
             ('distance_to_center', pipe_distance_to_center, list(DIST_ARGS.values())),
+            ('weather', pipe_weather, ['pickup_datetime']),
         ]
         # Filter out some bocks according to input parameters
         for bloc in feateng_blocks:

@@ -1,3 +1,5 @@
+from os.path import split
+
 import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -5,6 +7,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from TaxiFareModel.data import df_optimized, get_data, clean_df, DIST_ARGS
 from TaxiFareModel.utils import haversine_vectorized, minkowski_distance
 import pygeohash as gh
+import TaxiFareModel
+
+folder_source, _ = split(TaxiFareModel.__file__)
 
 class CustomEncoder(BaseEstimator, TransformerMixin):
     def size_optimize(self, df):
@@ -66,6 +71,27 @@ class DistanceTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         return self
+
+
+class AddWeatherData(BaseEstimator, TransformerMixin):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+    def transform(self, X, y=None):
+        assert isinstance(X, pd.DataFrame)
+        df_weather = pd.read_csv(folder_source+"/data/NY_weather_data.csv")
+        cols2drop = list(X)
+        cols2drop.extend(["STATION", "NAME", "LATITUDE", "LONGITUDE", "ELEVATION", "DATE", "TAVG", "TSUN"])
+        X["DATE"] = X["pickup_datetime"].apply(str).str[:10]
+        X = X.merge(df_weather, on="DATE", how="left", )
+        X = X.drop(cols2drop, axis=1)
+        X[list(X.filter(regex="WT"))] =  X.filter(regex="WT").fillna(0)
+        return X
+
+    def fit(self, X, y=None):
+        return self
+
+
 
 
 class OptimizeSize(BaseEstimator, TransformerMixin):
@@ -141,5 +167,5 @@ if __name__ == "__main__":
     df = clean_df(df)
     dir = Direction()
     dist_to_center = DistanceToCenter()
-    X = dir.transform(df)
-    X2 = dist_to_center.transform(df)
+    addw = AddWeatherData()
+    X = addw.transform(df)
