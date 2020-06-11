@@ -14,3 +14,4 @@ psutil
 flask==1.1.1
 gunicorn
 s3fs
+termcolor

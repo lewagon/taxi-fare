@@ -3,14 +3,18 @@ import os
 import joblib
 
 from google.cloud import storage
+from google.oauth2 import service_account
 from termcolor import colored
 from TaxiFareModel import BUCKET_NAME, PROJECT_ID, FOLDER_MODEL_PATH
 
 
 def get_credentials():
     credentials_raw = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-    creds = json.loads(credentials_raw)
-    return creds
+    if '.json' in credentials_raw:
+        credentials_raw = open(credentials_raw).read()
+    creds_json = json.loads(credentials_raw)
+    creds_gcp = service_account.Credentials.from_service_account_info(creds_json)
+    return creds_gcp
 
 
 def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
@@ -45,3 +49,7 @@ def download_model(model_directory=FOLDER_MODEL_PATH, bucket=BUCKET_NAME, rm=Tru
     if rm:
         os.remove('model.joblib')
     return model
+
+
+if __name__ == "__main__":
+    m = download_model()
