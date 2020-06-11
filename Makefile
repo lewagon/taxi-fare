@@ -30,6 +30,7 @@ deploy_heroku:
 heroku_set_gcp_env:
 	-@heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< /Users/jbizot/Documents/wagon-bootcamp-256316-51756099e206.json)"
 
+heroku_update: deploy_heroku heroku_set_gcp_env
 # ----------------------------------
 #    CLEANING COMMAND
 # ----------------------------------
