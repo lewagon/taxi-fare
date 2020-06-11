@@ -1,3 +1,4 @@
 BUCKET_NAME = "wagon-ml-bizot-27"
-PROJECT_ID="wagon-bootcamp-256316"
-FOLDER_MODEL_PATH='PipelineTest'
+PROJECT_ID = "wagon-bootcamp-256316"
+#FOLDER_MODEL_PATH = 'PipelineTest'
+FOLDER_MODEL_PATH = 'xgboost_721448_3.8450000286102295'

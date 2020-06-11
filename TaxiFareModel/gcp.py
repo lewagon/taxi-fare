@@ -4,7 +4,7 @@ import joblib
 
 from google.cloud import storage
 from termcolor import colored
-from TaxiFareModel import BUCKET_NAME, PROJECT_ID
+from TaxiFareModel import BUCKET_NAME, PROJECT_ID, FOLDER_MODEL_PATH
 
 
 def get_credentials():
@@ -29,7 +29,7 @@ def storage_upload(model_directory, bucket=BUCKET_NAME, rm=False):
         os.remove('model.joblib')
 
 
-def download_model(model_directory="PipelineTest", bucket=BUCKET_NAME, rm=True):
+def download_model(model_directory=FOLDER_MODEL_PATH, bucket=BUCKET_NAME, rm=True):
     creds = get_credentials()
     client = storage.Client(credentials=creds, project=PROJECT_ID).bucket(bucket)
 

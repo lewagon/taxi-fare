@@ -12,7 +12,8 @@ REQUIRED_PACKAGES = [
     'mlflow',
     'xgboost==0.90',
     'memoized_property',
-    'psutil']
+    'psutil',
+    's3fs']
 
 setup(
     name='TaxiFareModel',

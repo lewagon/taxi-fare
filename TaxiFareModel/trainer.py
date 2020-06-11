@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 import warnings
+from tempfile import mkdtemp
 
 import category_encoders as ce
 import joblib
@@ -11,15 +12,17 @@ from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Lasso, Ridge, LinearRegression
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, RobustScaler
 from termcolor import colored
 from xgboost import XGBRegressor
 
 from TaxiFareModel.data import get_data, clean_df, DIST_ARGS
-from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize
+from TaxiFareModel.encoders import TimeFeaturesEncoder, DistanceTransformer, AddGeohash, OptimizeSize, Direction, \
+    DistanceToCenter, AddWeatherData
 from TaxiFareModel.gcp import storage_upload
 from TaxiFareModel.utils import compute_rmse, simple_time_tracker
 
@@ -46,10 +49,11 @@ class Trainer(object):
         """
         self.pipeline = None
         self.kwargs = kwargs
-        self.grid = kwargs.get("gridsearch", False)  # apply gridsearch if True
+        self.gridsearch = kwargs.get("gridsearch", False)  # apply gridsearch if True
         self.local = kwargs.get("local", True)  # if True training is done locally
         self.optimize = kwargs.get("optimize", False)  # Optimizes size of Training Data if set to True
         self.mlflow = kwargs.get("mlflow", False)  # if True log info to nlflow
+        self.n_jobs = kwargs.get("n_jobs", 4)  # if True log info to nlflow
         self.experiment_name = kwargs.get("experiment_name", self.EXPERIMENT_NAME)  # cf doc above
         self.model_params = None  # for
         self.X_train = X
@@ -76,14 +80,17 @@ class Trainer(object):
         elif estimator == "RandomForest":
             model = RandomForestRegressor()
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
-                'max_features': ['auto', 'sqrt']}
+                'max_features': ['auto', 'sqrt'],
+                'n_estimators': range(60, 220, 40)}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
         elif estimator == "xgboost":
-            model = XGBRegressor(objective='reg:squarederror')
-            self.model_params = {'max_depth': range(10, 20, 2),
+            model = XGBRegressor(objective='reg:squarederror', n_jobs=self.n_jobs, max_depth=10, learning_rate=0.05,
+                                 gamma=3)
+            self.model_params = {'max_depth': range(2, 20, 2),
                                  'n_estimators': range(60, 220, 40),
-                                 'learning_rate': [0.1, 0.01, 0.05]
-                                 }
+                                 'learning_rate': [0.3, 0.1, 0.01, 0.05],
+                                 'min_child_weight': [1, 3, 5],
+                                 'gamma': [1, 3, 5]}
         else:
             model = Lasso()
         estimator_params = self.kwargs.get("estimator_params", {})
@@ -93,21 +100,40 @@ class Trainer(object):
         return model
 
     def set_pipeline(self):
+        memory = self.kwargs.get("pipeline_memory", None)
+        dist = self.kwargs.get("distance_type", "euclidian")
+        feateng_steps = self.kwargs.get("feateng", ["distance", "time_features"])
+        if memory:
+            memory = mkdtemp()
 
+        # Define feature engineering pipeline blocks here
         pipe_time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
                                            OneHotEncoder(handle_unknown='ignore'))
-        pipe_distance = make_pipeline(DistanceTransformer(**DIST_ARGS), StandardScaler())
+        pipe_distance = make_pipeline(DistanceTransformer(distance_type=dist, **DIST_ARGS), RobustScaler())
         pipe_geohash = make_pipeline(AddGeohash(), ce.HashingEncoder())
+        pipe_direction = make_pipeline(Direction(), RobustScaler())
+        pipe_distance_to_center = make_pipeline(DistanceToCenter(), RobustScaler())
+        pipe_weather = make_pipeline(AddWeatherData(), SimpleImputer(), RobustScaler())
 
-        features_encoder = ColumnTransformer([
+        # Define default feature engineering blocs
+        feateng_blocks = [
             ('distance', pipe_distance, list(DIST_ARGS.values())),
             ('time_features', pipe_time_features, ['pickup_datetime']),
-            ('geohash', pipe_geohash, list(DIST_ARGS.values()))
-        ], n_jobs=None, remainder="drop")
+            ('geohash', pipe_geohash, list(DIST_ARGS.values())),
+            ('direction', pipe_direction, list(DIST_ARGS.values())),
+            ('distance_to_center', pipe_distance_to_center, list(DIST_ARGS.values())),
+            ('weather', pipe_weather, ['pickup_datetime']),
+        ]
+        # Filter out some bocks according to input parameters
+        for bloc in feateng_blocks:
+            if bloc[0] not in feateng_steps:
+                feateng_blocks.remove(bloc)
+
+        features_encoder = ColumnTransformer(feateng_blocks, n_jobs=None)
 
         self.pipeline = Pipeline(steps=[
             ('features', features_encoder),
-            ('rgs', self.get_estimator())])
+            ('rgs', self.get_estimator())], memory=memory)
 
         if self.optimize:
             self.pipeline.steps.insert(-1, ['optimize_size', OptimizeSize(verbose=False)])
@@ -120,19 +146,44 @@ class Trainer(object):
           'rgs__max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
         """
         # Here to apply ramdom search to pipeline, need to follow naming "rgs__paramname"
+        train_mem = (self.X_train.memory_usage(index=True).sum() / 1000000000) * 2
+        ram = int(virtual_memory().total / 1000000000)
+        dispatch = ram // train_mem
+        cpus = multiprocessing.cpu_count()
         params = {"rgs__" + k: v for k, v in self.model_params.items()}
         self.pipeline = RandomizedSearchCV(estimator=self.pipeline, param_distributions=params,
                                            n_iter=10,
                                            cv=2,
                                            verbose=1,
                                            random_state=42,
-                                           n_jobs=None)
+                                           n_jobs=self.n_jobs,
+                                           pre_dispatch=None)
+
+    def add_random_search(self):
+        """"
+        Apply Gridsearch on self.params defined in get_estimator
+        {'rgs__n_estimators': [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)],
+          'rgs__max_features' : ['auto', 'sqrt'],
+          'rgs__max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
+        """
+        # Here to apply ramdom search to pipeline, need to follow naming "rgs__paramname"
+        params = {"rgs__" + k: v for k, v in self.model_params.items()}
+        self.pipeline = GridSearchCV(estimator=self.pipeline, param_distributions=params,
+                                     n_iter=10,
+                                     cv=2,
+                                     verbose=1,
+                                     random_state=42,
+                                     n_jobs=self.n_jobs)
+        # pre_dispatch=None)
+
+    def add_hyperopt_search(self):
+        pass
 
     @simple_time_tracker
-    def train(self, gridsearch=False):
+    def train(self):
         tic = time.time()
         self.set_pipeline()
-        if gridsearch:
+        if self.gridsearch:
             self.add_grid_search()
         self.pipeline.fit(self.X_train, self.y_train)
         # mlflow logs
@@ -144,6 +195,7 @@ class Trainer(object):
         if self.split:
             rmse_val = self.compute_rmse(self.X_val, self.y_val, show=True)
             self.mlflow_log_metric("rmse_val", rmse_val)
+            self.rmse_val = rmse_val
             print(colored("rmse train: {} || rmse val: {}".format(rmse_train, rmse_val), "blue"))
         else:
             print(colored("rmse train: {}".format(rmse_train), "blue"))
@@ -159,14 +211,18 @@ class Trainer(object):
         rmse = compute_rmse(y_pred, y_test)
         return round(rmse, 3)
 
-    def save_model(self, upload=True, auto_remove=True):
+    def save_model(self):
         """Save the model into a .joblib and upload it on Google Storage /models folder
         HINTS : use sklearn.joblib (or jbolib) libraries and google-cloud-storage"""
+        model_name = self.kwargs.get("estimator", self.ESTIMATOR)
         joblib.dump(self.pipeline, 'model.joblib')
         print(colored("model.joblib saved locally", "green"))
 
-        if not self.local:
-            storage_upload(model_directory=MODEL_DIRECTY)
+        rmse_val = round(self.rmse_val, 3)
+        model_directory_name = f"{model_name}_{self.nrows}_{rmse_val}"
+        upload = self.kwargs.get("upload", False)
+        if upload:
+            storage_upload(model_directory=model_directory_name, rm=True)
 
     ### MLFlow methods
     @memoized_property
@@ -213,21 +269,23 @@ class Trainer(object):
         self.mlflow_log_param("cpus", cpus)
 
 
-# TODO : train locally to test
-# TODO: Train model on bigger machine
-
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
     experiment = "GCP_Instances"
-    params = dict(nrows=100000,
+    params = dict(nrows=10000,
                   upload=False,
-                  local=True,  # set to False to get data from GCP (Storage or BigQuery)
+                  local=False,  # set to False to get data from GCP (Storage or BigQuery)
                   gridsearch=False,
                   optimize=True,
-                  estimator="RandomForest",
+                  estimator="xgboost",
                   mlflow=False,  # set to True to log params to mlflow
-                  experiment_name=experiment)
+                  experiment_name=experiment,
+                  pipeline_memory=None,
+                  distance_type="manhattan",
+                  feateng=["distance_to_center", "direction", "distance", "time_features"],
+                  n_jobs=-1)
+
     print("############   Loading Data   ############")
     df = get_data(**params)
     df = clean_df(df)

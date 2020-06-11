@@ -1,8 +1,14 @@
 # ----------------------------------
 #         LOCAL SET UP
 # ----------------------------------
-install:
+install_requirements:
+	@pip install -r requirements.txt
+
+install: install_requirements
 	@pip install . -U
+
+upload_simple_model:
+	@python -m TaxiFareModel.trainer
 
 # ----------------------------------
 #         API COMMANDS
@@ -33,6 +39,5 @@ clean:
 	@rm -fr __init__.py
 	@rm -fr build
 	@rm -fr dist
-	@rm -fr ${PACKAGE_NAME}-*.dist-info
-	@rm -fr ${PACKAGE_NAME}.egg-info
-	-@rm model.joblib
+	@rm -fr $TaxiFareModel-*.dist-info
+	@rm -fr $TaxiFareModel.egg-info
