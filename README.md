@@ -52,11 +52,16 @@ stt # Open the project in Sublime Text!
 ### Python code
 
 Replace variable inside `trainer.py` and `data.py` with your variables:
-- `BUCKET_NAME`, and `PROJECT_ID` in `__init__.py` for downloading models from GCP
+- `BUCKET_NAME`, `PROJECT_ID`, and `FOLDER_MODEL_PATH` in `__init__.py` for downloading models from GCP
 
 ### Makefile Code
 Do the same inside Makefile with:
 - `PROJECT_ID`, `BUCKET_NAME` to get models 
+- correct path to your google credentials in following line:
+```make
+heroku_set_gcp_env:
+	-@heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< /Users/jbizot/Documents/wagon-bootcamp-256316-51756099e206.json)"
+```
 
 ## Deploy app locally
 
