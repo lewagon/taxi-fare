@@ -1,12 +1,10 @@
 import pandas as pd
 from google.cloud import storage
+import s3fs
 
 from TaxiFareModel.utils import simple_time_tracker
-from TaxiFareModel import BUCKET_NAME
 
 #PATH_INSIDE_BUCKET = "data/data_10Mill.csv"
-
-PATH_INSIDE_BUCKET = "data/bq_complete.csv"
 
 DIST_ARGS = dict(start_lat="pickup_latitude",
                  start_lon="pickup_longitude",
@@ -22,7 +20,8 @@ def get_data(nrows=10000, local=False, optimize=False, **kwargs):
     if local:
         path = "data/data_data_10Mill.csv"
     else:
-        path = "gs://{}/{}".format(BUCKET_NAME, PATH_INSIDE_BUCKET)
+        #path = "gs://{}/{}".format(BUCKET_NAME, PATH_INSIDE_BUCKET)
+        path = 's3://wagon-public-datasets/taxi-fare-train.csv'
     if optimize:
         cols = infer_dtypes(path)
         cols = {k: v for k, v in cols.items() if "latitude" not in k and "longitude" not in k}
