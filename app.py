@@ -9,8 +9,10 @@ from flask import request
 from termcolor import colored
 
 from TaxiFareModel.gcp import download_model
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 PATH_TO_MODEL = "data/model.joblib"
 NYC_DEFAULT_LAT = 40.7808
